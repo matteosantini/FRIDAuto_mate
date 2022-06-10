@@ -1,7 +1,8 @@
 // Returns the list [id] -> activity_name
 function enumerateActivities(package_name){
   Java.perform(function(){
-  var rclass = Java.use(`${package_name}.R$layout]`);//
+    console.log(`${package_name}.R$layout`);
+  var rclass = Java.use(`${package_name}.R$layout`);//
   var arr = Object.keys(rclass);
   console.log("*********************************");
   console.log("ENUMERATING ACTIVITIES");
