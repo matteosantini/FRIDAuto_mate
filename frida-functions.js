@@ -1,11 +1,9 @@
 // Returns the list [id] -> activity_name
 function enumerateActivities(package_name){
   Java.perform(function(){
-    console.log(`${package_name}.R$layout`);
   var rclass = Java.use(`${package_name}.R$layout`);//
   var arr = Object.keys(rclass);
   console.log("*********************************");
-  console.log("ENUMERATING ACTIVITIES");
   console.log("[index] => activity");
   var idx = 0;
   for (var i = 0; i < arr.length; i++) {
@@ -13,11 +11,11 @@ function enumerateActivities(package_name){
       console.log("["+ idx++ +"] => " + arr[i]);
     }
    }
-   console.log("*********************************");
+  console.log("*********************************");
   })
 }
 
-//takes the activity index from python, it hooks the onStart executing setContentView()
+//takes the activity index from python, it hooks onStart executing setContentView()
 function goToActivity(package_name, idx_py){
   Java.perform(function (){
       var appCompatActivity = Java.use('androidx.appcompat.app.AppCompatActivity');
@@ -40,7 +38,33 @@ function goToActivity(package_name, idx_py){
   })
 }
 
+//enumerate apk loaded classes. // TODO: insert find functionality
+function enumerateLoadedClasses(class_name = null){
+  Java.perform(function() {
+      Java.enumerateLoadedClasses({
+          onMatch: function(className) {
+              // if(className.includes("MainActivity")){
+                console.log(`[CLASS] ${className}.R$layout`);
+              // }
+          },
+          onComplete: function() {}
+      });
+  });
+}
+
+//intercept sql queries
+function interceptSQLiteQueries(){
+  Interceptor.attach(Module.findExportByName('libsqlite.so', 'sqlite3_prepare16_v2'), {
+        onEnter: function(args) {
+            console.log('[DB] ' + Memory.readUtf16String(args[0]) + '\tSQL: ' + Memory.readUtf16String(args[1]));
+        }
+  });
+  console.log("[*] SQL Query interceptor activated");
+}
+
 rpc.exports = {
     enumerateactivities: enumerateActivities,
-    gotoactivity: goToActivity
+    gotoactivity: goToActivity,
+    enumerateloadedclasses: enumerateLoadedClasses,
+    interceptsqlitequeries: interceptSQLiteQueries,
 };
