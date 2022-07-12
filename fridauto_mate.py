@@ -110,13 +110,13 @@ while 1 == 1:
             custom_word = input("Insert custom keyword: ")
             script.exports.enumerateApplicationClasses(custom_word)
         else:
-            script.exports.enumerateApplicationClasses(package_name)
+            script.exports.enumerateApplicationClasses(package_name)# enumerate application classes
     if command == "6":
-        script.exports.interceptSQLiteQueries()
+        script.exports.interceptSQLiteQueries()# intercept SQLite Queries
     if command == "7":
         latitude = input("latitude:")
         longitude = input("longitude:")
-        script.exports.changeLocation(latitude, longitude)
+        script.exports.changeLocation(latitude, longitude)# Change Location
     if command == "8": # OSINT
         strings_path = f'.\\analyzed_apks\\{package_name}\\base\\res\\values\\strings.xml'
         if not os.path.exists(strings_path):
