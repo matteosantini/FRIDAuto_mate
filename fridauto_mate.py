@@ -3,7 +3,9 @@ import frida
 import os
 from xml.dom import minidom
 from subprocess import Popen, PIPE
+from pathlib import Path
 import re
+import options_function
 
 def my_message_handler(message, payload):
     print(message)
@@ -54,17 +56,10 @@ while 1 == 1:
     if command == "2": # download apk from device
         print("[*]")
         print("[*] Retrieving package location...")
-        command = ['adb', 'shell', 'pm', 'path', package_name]
-        process = Popen(command, stdout=PIPE, stderr=True)
-        output, error = process.communicate()
-        location_pkg = output.decode('utf-8').replace('package:', '')
+        location_pkg = options_function.retrievePackage(package_name)
         print("[*] Package location: " + location_pkg)
         print("[*] Pulling apk into /analyzed_apks")
-        os.chdir(os.path.dirname(__file__))
-        if not os.path.exists(f'.\\analyzed_apks\\{package_name}'):
-            os.makedirs(f'.\\analyzed_apks\\{package_name}')
-        cmd = f'"adb pull {location_pkg} .\\analyzed_apks\\{package_name}"'.replace('\n','')
-        os.system(cmd)
+        options_function.pullApkToPackageFolder(os.path.dirname(__file__), package_name, location_pkg)
         print(f"[*] APK saved in {os.path.dirname(__file__)}\\analyzed_apks\\{package_name}")
         print("[*]")
     if command == "3": # B. apktool decode → access to manifest
@@ -131,3 +126,10 @@ while 1 == 1:
         latitude = input("latitude:")
         longitude = input("longitude:")
         script.exports.changeLocation(latitude, longitude)
+    if command == "8":
+        strings_path = f'.\\analyzed_apks\\{package_name}\\base\\res\\values\\strings.xml'
+        if not os.path.exists(os.path.exists(strings_path)):
+            print("[*] The strings.xml is not found or the apk was not pulled out.")
+        else:
+            print("[*] strings.xml found, retrieving all the urls/ips...")
+            options_function.extractUrlsAndIpsFromFile(strings_path)
