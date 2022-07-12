@@ -1,0 +1,4 @@
+/__pycache__
+/osint_results/*
+/analyzed_apks/*
+!.gitignore
