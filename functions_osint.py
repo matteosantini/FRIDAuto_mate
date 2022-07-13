@@ -1,7 +1,21 @@
 import re
 import shodan
 import requests
+import vt
+import json
 from urllib.parse import urlparse
+
+# retrieve json configuration
+with open('config.json', 'r') as f:
+    config = json.load(f)
+
+# init shodan api
+SHODAN_API_KEY = config["api_key_shodan"]
+api_shodan = shodan.Shodan(SHODAN_API_KEY)
+
+# init virustotal api
+VT_API_KEY = config["api_key_virustotal"]
+client = vt.Client(VT_API_KEY)
 
 # Retrieve all urls
 def extractUrlsAndIpsFromFile(strings_path):
@@ -24,7 +38,7 @@ def extractUrlsAndIpsFromFile(strings_path):
 def extractDomainFromUrl(url):
     return urlparse(url).netloc
 
-def shodanResolveDns(api_shodan, SHODAN_API_KEY, domain):
+def shodanResolveDns(domain):
     try:
             dns_resolve = 'https://api.shodan.io/dns/resolve?hostnames=' + domain + '&key=' + SHODAN_API_KEY
             resolved = requests.get(dns_resolve)
@@ -33,9 +47,14 @@ def shodanResolveDns(api_shodan, SHODAN_API_KEY, domain):
     except shodan.APIError as error:
             print('Error: {}'.format(error))
 
-def shodanSearchIp(api, ip):
+def shodanSearchIp(ip):
     try:
-        host = api.host(ip)
+        host = api_shodan.host(ip)
         return host
     except shodan.APIError as error:
         print('Error: {}'.format(error))
+
+def vtScanUrl(url):
+    url_id = vt.url_id(url)
+    url = client.get_object("/urls/{}", url_id)
+    return url

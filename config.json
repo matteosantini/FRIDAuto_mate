@@ -1,3 +1,4 @@
 {
-  "api_key_shodan":"API_KEY_SHODAN"
+  "api_key_shodan":"API_KEY",
+  "api_key_virustotal":"API_KEY"
 }

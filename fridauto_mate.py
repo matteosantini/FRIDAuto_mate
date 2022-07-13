@@ -1,21 +1,14 @@
 import time
 import frida
 import os
-from xml.dom import minidom
-from pathlib import Path
 import functions_dast
 import functions_sast
 import functions_osint
-import shodan
 import json
+import utils
 
-# retrieve json configuration
-with open('config.json', 'r') as f:
-    config = json.load(f)
-
-# init shodan api
-SHODAN_API_KEY = config["api_key_shodan"]
-api_shodan = shodan.Shodan(SHODAN_API_KEY)
+from xml.dom import minidom
+from pathlib import Path
 
 #setup FRIDA and Python
 def my_message_handler(message, payload):
@@ -123,31 +116,43 @@ while 1 == 1:
             print("[*] The strings.xml file is not found or the apk was not pulled out.")
         else:
             print("[*] strings.xml found, retrieving all the urls/ips...")
+            if not os.path.exists(f'.\\osint_results\\{package_name}\\shodan'):
+                os.makedirs(f'.\\osint_results\\{package_name}\\shodan')
+            if not os.path.exists(f'.\\osint_results\\{package_name}\\virustotal'):
+                os.makedirs(f'.\\osint_results\\{package_name}\\virustotal')
             to_search = functions_osint.extractUrlsAndIpsFromFile(strings_path)
             no_result = True
             if(len(to_search["urls"])>0):
                 no_result = False
-                if not os.path.exists(f'.\\osint_results\\{package_name}\\shodan'):
-                    os.makedirs(f'.\\osint_results\\{package_name}\\shodan')
                 for url in to_search["urls"]:
                     domain = functions_osint.extractDomainFromUrl(url)
-                    json_domainfile_path = f'.\\osint_results\\{package_name}\\shodan\\{domain}.json'
-                    if not os.path.exists(json_domainfile_path):
-                        ip = functions_osint.shodanResolveDns(api_shodan, SHODAN_API_KEY, domain)
-                        json_result = functions_osint.shodanSearchIp(api_shodan, ip)
-                        open(json_domainfile_path, 'a').close()
-                        with open(json_domainfile_path, 'w') as outfile:
-                            json.dump(json_result, outfile, indent=4)
-            if(len(to_search)>0):
+                    # shodan url
+                    json_shodan_path = f'.\\osint_results\\{package_name}\\shodan\\{domain}.json'
+                    if not os.path.exists(json_shodan_path):
+                        ip = functions_osint.shodanResolveDns(domain)
+                        json_result = functions_osint.shodanSearchIp(ip)
+                        utils.writeJsonFile(json_shodan_path, json_result)
+                    # vt url
+                    json_virustotal_path = f'.\\osint_results\\{package_name}\\virustotal\\{domain}.json'
+                    if not os.path.exists(json_virustotal_path):
+                        vt_res = functions_osint.vtScanUrl(url)
+                        json_result = vt_res.__dict__
+                        utils.writeJsonFile(json_virustotal_path, json_result)
+            if(len(to_search["ips"])>0):
                 no_result = False
-                if not os.path.exists(f'.\\osint_results\\{package_name}\\shodan'):
-                        os.makedirs(f'.\\osint_results\\{package_name}\\shodan')
                 for ip in to_search["ips"]:
+                    # shodan ip
                     json_ipfile_path = f'.\\osint_results\\{package_name}\\shodan\\{ip}.json'
                     if not os.path.exists(json_ipfile_path):
-                        json_result = functions_osint.shodanSearchIp(api_shodan, ip)
+                        json_result = functions_osint.shodanSearchIp(ip)
                         open(json_ipfile_path, 'a').close()
                         with open(json_ipfile_path, 'w') as outfile:
                             json.dump(json_result, outfile, indent=4)
+                    # vt ip
+                    json_virustotal_path = f'.\\osint_results\\{package_name}\\virustotal\\{ip}.json'
+                    if not os.path.exists(json_virustotal_path):
+                        vt_res = functions_osint.vtScanUrl(ip)
+                        json_result = vt_res.__dict__
+                        utils.writeJsonFile(json_virustotal_path, json_result)
             if(no_result):
                 print("[*] ip and domains not found.")
