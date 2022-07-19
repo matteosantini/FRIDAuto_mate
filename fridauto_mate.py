@@ -6,6 +6,8 @@ import functions_sast
 import functions_osint
 import json
 import utils
+import sys
+import fridauto_options
 
 from xml.dom import minidom
 from pathlib import Path
@@ -16,7 +18,10 @@ def my_message_handler(message, payload):
     print(payload)
 
 device = frida.get_usb_device()
-package_name = "com.example.maptmockapplication"
+if(len(sys.argv)>1):
+    package_name = sys.argv[1]
+else:
+    package_name = "com.example.maptmockapplication"
 pid = device.spawn([package_name])
 device.resume(pid)
 time.sleep(1)
@@ -39,7 +44,8 @@ command = ""
 options = {
     "1":"Exit",
     "2":"Retrieve APK from device",
-    "3":"Decode APK",
+    "3":"Decode APK to smali",
+    "9":"Decode APK to java",
     "4":"Enumerate & Change Activities",
     "5":"Enumerate Application Classes",
     "6":"Intercept SQLite Queries",
@@ -58,27 +64,28 @@ while 1 == 1:
     if command == "1":
         break
     if command == "2": # retrieve apk from device
-        print("[*]")
-        print("[*] Retrieving package location...")
-        location_pkg = functions_sast.retrievePackage(package_name)
-        print("[*] Package location: " + location_pkg)
-        print("[*] Pulling apk into /analyzed_apks")
-        functions_sast.pullApkToPackageFolder(os.path.dirname(__file__), package_name, location_pkg)
-        print(f"[*] APK saved in {os.path.dirname(__file__)}\\analyzed_apks\\{package_name}")
-        print("[*]")
+        fridauto_options.retrieveApk(package_name)
     if command == "3": # B. apktool decode → access to manifest
+        fridauto_options.decodeApkToSmali(package_name)
+    if command == "9":
         print("[*]")
         if not os.path.exists(f'.\\analyzed_apks\\{package_name}\\base.apk'):
             print("[*] Please, run firstly [2] Retrieve APK from device.")
         else:
-            if os.path.exists(f'.\\analyzed_apks\\{package_name}\\base'):
+            if os.path.exists(f'.\\analyzed_apks\\{package_name}\\base-dex2jar.jar'):
                 decod = input("[*] Decoded files are already present, do you want to repeat the decoding process?[Y/n]")
                 if decod.lower() == "y":
-                    print("[*] Decoding apk...")
-                    functions_sast.decodeApk(package_name)
+                    print("[*] Decoding apk to jar...")
+                    # [1] rename apk to zip
+                    if not os.path.exists(f'.\\analyzed_apks\\{package_name}\\base.zip'):
+                        name_file = f'.\\analyzed_apks\\{package_name}\\base.apk'
+                        to = f'.\\analyzed_apks\\{package_name}\\base.zip'
+                        utils.copyFile(name_file, to)
+                        functions_sast.decodeClassesToDex(to)
+                    #functions_sast.decodeApkToJar(package_name)
             else:
-                print("[*] Decoding apk...")
-                functions_sast.decodeApk(package_name)
+                print("[*] Decoding apk to jar...")
+                #functions_sast.decodeApkToJar(package_name)
         print("[*]")
     if command == "4": # enumerate & change activities
         if not arr_activities:
@@ -120,6 +127,8 @@ while 1 == 1:
                 os.makedirs(f'.\\osint_results\\{package_name}\\shodan')
             if not os.path.exists(f'.\\osint_results\\{package_name}\\virustotal'):
                 os.makedirs(f'.\\osint_results\\{package_name}\\virustotal')
+            if not os.path.exists(f'.\\osint_results\\{package_name}\\wbm'):
+                os.makedirs(f'.\\osint_results\\{package_name}\\wbm')
             to_search = functions_osint.extractUrlsAndIpsFromFile(strings_path)
             no_result = True
             if(len(to_search["urls"])>0):
@@ -133,11 +142,11 @@ while 1 == 1:
                         json_result = functions_osint.shodanSearchIp(ip)
                         utils.writeJsonFile(json_shodan_path, json_result)
                     # vt url
-                    json_virustotal_path = f'.\\osint_results\\{package_name}\\virustotal\\{domain}.json'
-                    if not os.path.exists(json_virustotal_path):
-                        vt_res = functions_osint.vtScanUrl(url)
-                        json_result = vt_res.__dict__
-                        utils.writeJsonFile(json_virustotal_path, json_result)
+                    json_wbm_path = f'.\\osint_results\\{package_name}\\wbm\\{domain}.json'
+                    if not os.path.exists(json_wbm_path):
+                        wb_res = functions_osint.wbScan(url)
+                        json_result = wb_res
+                        utils.writeJsonFile(json_wbm_path, json_result)
             if(len(to_search["ips"])>0):
                 no_result = False
                 for ip in to_search["ips"]:

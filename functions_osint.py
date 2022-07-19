@@ -3,6 +3,7 @@ import shodan
 import requests
 import vt
 import json
+
 from urllib.parse import urlparse
 
 # retrieve json configuration
@@ -54,7 +55,10 @@ def shodanSearchIp(ip):
     except shodan.APIError as error:
         print('Error: {}'.format(error))
 
+# virustotal search
 def vtScanUrl(url):
     url_id = vt.url_id(url)
     url = client.get_object("/urls/{}", url_id)
     return url
+
+    

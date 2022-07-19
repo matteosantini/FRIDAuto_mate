@@ -21,3 +21,9 @@ def decodeApk(package_name):
     os.chdir(os.path.dirname(__file__)+f'\\analyzed_apks\\{package_name}')
     cmd = '"apktool d -f base.apk"'
     os.system(cmd)
+
+# [X] Decode apk
+def decodeApkToJar(package_name):
+    os.chdir(os.path.dirname(__file__)+f'\\analyzed_apks\\{package_name}')
+    cmd = '"d2j-dex2jar.bat -f base.apk"'
+    os.system(cmd)
