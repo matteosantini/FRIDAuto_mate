@@ -48,7 +48,7 @@ def shodanResolveDns(domain):
     except shodan.APIError as error:
             print('Error: {}'.format(error))
 
-def shodanSearchIp(ip):
+def shodanSearchIp(ip, api_shodan):
     try:
         host = api_shodan.host(ip)
         return host
@@ -56,9 +56,7 @@ def shodanSearchIp(ip):
         print('Error: {}'.format(error))
 
 # virustotal search
-def vtScanUrl(url):
+def vtScanUrl(url, client):
     url_id = vt.url_id(url)
     url = client.get_object("/urls/{}", url_id)
     return url
-
-    
